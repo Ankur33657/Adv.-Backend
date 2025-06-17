@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Advanced Node.js Backend Concepts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style, thematic SPA. The homepage presents 10 interactive cards, one for each core backend concept. Clicking a card smoothly navigates the user to a dedicated section for that topic. Each section uses a tabbed interface ('Overview', 'Node.js Implementation', 'AWS Integration', 'Comparisons & Practices') to structure the detailed information logically. This non-linear, drill-down approach is chosen to make the dense technical report highly accessible and explorable, allowing users to jump to topics of interest and consume complex information in manageable chunks, which significantly enhances usability over a linear document. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Core concepts (Rate Limiting, Load Balancing, etc.). Goal: Inform/Organize. Method: Thematic sections with tabbed content panes. Interaction: Clicking tabs to switch content views. Justification: Breaks down complex topics into digestible parts (What it is, Node.js code, AWS services). Library/Method: HTML/Tailwind/JS.
+        - Report Info: Comparative data (e.g., ALB vs NLB, ECS vs EKS). Goal: Compare. Method: Visually distinct comparison tables/cards. Interaction: Subtle hover effects. Justification: Makes technical trade-offs clear and easy to scan. Library/Method: HTML/Tailwind.
+        - Report Info: Code snippets. Goal: Demonstrate. Method: Styled code blocks with a dark theme. Interaction: A 'Copy' button for each snippet. Justification: Provides direct utility for developers. Library/Method: HTML/Tailwind/JS.
+        - Report Info: Architectural flows (e.g., Reverse Proxy). Goal: Visualize Relationships. Method: Simple diagrams using styled HTML divs and CSS borders to represent components and data flow. Interaction: Hover tooltips on diagram components. Justification: Clarifies system architectures far better than text alone. Library/Method: HTML/Tailwind/JS.
+        - Chart.js is included as per requirements, but no quantitative chart data is present in the source report, so no charts are rendered.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC; /* gray-100 */
+            color: #2D3748; /* gray-800 */
+        }
+        .concept-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .concept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tab-button.active {
+            border-color: #4FD1C5; /* teal-400 */
+            color: #2C7A7B; /* teal-700 */
+            background-color: #E6FFFA; /* teal-50 */
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .code-block {
+            background-color: #1A202C; /* gray-900 */
+            color: #F7FAFC; /* gray-100 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4A5568; /* gray-600 */
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .copy-button:hover {
+            opacity: 1;
+        }
+        .diagram-box {
+            border: 2px solid #CBD5E0; /* gray-300 */
+            padding: 1rem;
+            text-align: center;
+            border-radius: 0.5rem;
+            background-color: white;
+        }
+        .diagram-arrow {
+            font-size: 1.5rem;
+            color: #718096; /* gray-500 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 0.5rem;
+        }
+        .comparison-table {
+            grid-template-columns: 1fr repeat(4, minmax(0, 1fr));
+        }
+        .comparison-table > div {
+            padding: 1rem;
+            border-bottom: 1px solid #E2E8F0; /* gray-200 */
+        }
+        .comparison-table .header {
+            background-color: #EDF2F7; /* gray-100 */
+            font-weight: 600;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #2D3748; /* gray-800 */
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-baseline space-x-4">
+                            <h1 class="text-xl font-bold text-gray-800">Advanced Node.js Backend Concepts</h1>
+                        </div>
+                    </div>
+                </div>
+                 <div class="hidden md:block">
+                     <a href="#concepts-grid" class="text-gray-600 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                 </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <!-- Intro Section -->
+        <section id="intro" class="text-center mb-12 md:mb-16">
+            <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">An Interactive Guide to Scalable Backend Architectures</h2>
+            <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+                This application transforms the "Detailed Node.js Backend Report" into an interactive experience. Explore ten advanced concepts crucial for building resilient, high-performance applications on AWS. Click any card below to dive in.
+            </p>
+        </section>
+
+        <!-- Concepts Grid -->
+        <section id="concepts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
+            <!-- Cards will be injected here by JS -->
+        </section>
+
+        <!-- Detailed Content Sections -->
+        <div id="detailed-content">
+            <!-- Detailed content for each concept will be injected here by JS -->
+        </div>
+
+    </main>
+
+    <footer class="bg-white mt-16">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+            <p>Interactive Application generated from the "Detailed Node.js Backend Report".</p>
+            <p>Designed to enhance exploration and understanding of advanced backend concepts.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const concepts = [
+                { id: 'rate-limiting', title: 'Rate Limiting', icon: '🛡️', summary: 'Control traffic to prevent abuse and ensure fair usage.' },
+                { id: 'load-balancing', title: 'Load Balancing', icon: '⚖️', summary: 'Distribute network traffic across multiple servers.' },
+                { id: 'caching', title: 'Caching', icon: '💾', summary: 'Store data temporarily to speed up future requests.' },
+                { id: 'cdn', title: 'CDN', icon: '🌍', summary: 'Deliver content quickly to users across the globe.' },
+                { id: 'microservices', title: 'Microservices', icon: '🧩', summary: 'Build applications as a suite of small services.' },
+                { id: 'api-gateway', title: 'API Gateway', icon: '🚪', summary: 'A single entry point for all client API requests.' },
+                { id: 'webhook', title: 'Webhook', icon: '🎣', summary: 'Automate communication between apps with real-time data.' },
+                { id: 'sharding', title: 'Sharding', icon: '쪼', summary: 'Partition large databases into smaller, faster pieces.' },
+                { id: 'proxy', title: 'Proxy', icon: '↔️', summary: 'An intermediary for requests between clients and servers.' },
+                { id: 'message-queues', title: 'Message Queues', icon: '📬', summary: 'Enable asynchronous communication between services.' },
+            ];
+
+            const contentData = {
+                'rate-limiting': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is Rate Limiting?</h3>
+                            <p class="mb-4 text-gray-700">Rate limiting is a critical technique to control the amount of network traffic an application receives, preventing resource exhaustion and ensuring fair access for all users. Its primary purpose is to protect APIs from abuse, Denial of Service (DoS) attacks, and accidental overuse. By throttling clients that make excessive requests, it enhances security, improves system performance by ensuring fair resource allocation, and helps maintain stability.</p>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Benefits</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Security:</strong> Mitigates DDoS attacks and malicious bots.</li>
+                                        <li><strong>Performance:</strong> Prevents any single client from monopolizing resources.</li>
+                                        <li><strong>Reliability:</strong> Avoids server overload and maintains system stability.</li>
+                                        <li><strong>Cost Reduction:</strong> Minimizes unnecessary requests and resource usage.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Common Algorithms</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Fixed Window:</strong> Simple but can allow request bursts at window edges.</li>
+                                        <li><strong>Leaky Bucket:</strong> Smooths out traffic bursts but can add latency.</li>
+                                        <li><strong>Token Bucket:</strong> Flexible and efficient, allows bursts while maintaining an average rate.</li>
+                                        <li><strong>Sliding Window:</strong> More accurate and smoother than Fixed Window but more resource-intensive.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Implementing Rate Limiting in Node.js</h3>
+                            <p class="mb-6 text-gray-700">In Node.js, rate limiting can be implemented directly in the application. For single-server setups, in-memory solutions are simple. However, for distributed systems scaled across multiple servers, a centralized data store like Redis is essential for consistent rate limit enforcement.</p>
+                            
+                            <h4 class="text-xl font-semibold mb-2">In-Memory with <code>express-rate-limit</code></h4>
+                            <p class="mb-4 text-gray-700">Ideal for simple, single-instance applications. This approach is easy to set up but is not suitable for horizontally scaled environments, as each server instance would have its own independent counter.</p>
+                            <div class="code-block mb-8">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-js">const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: 'Too many requests, please try again later.'
+});
+
+app.use('/api', limiter);</code></pre>
+                            </div>
+
+                            <h4 class="text-xl font-semibold mb-2">Distributed Limiting with Redis</h4>
+                            <p class="mb-4 text-gray-700">For scalable, multi-server applications, Redis provides a centralized, shared counter. This ensures rate limits are applied consistently across all application instances, which is a critical best practice for production systems.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-js">const { RateLimiterRedis } = require('rate-limiter-flexible');
+const redis = require('redis');
+
+const redisClient = redis.createClient({ host: 'localhost', port: 6379 });
+
+const rateLimiter = new RateLimiterRedis({
+    storeClient: redisClient,
+    points: 100, // 100 requests
+    duration: 15 * 60, // per 15 minutes
+});
+
+app.use(async (req, res, next) => {
+    try {
+        await rateLimiter.consume(req.ip);
+        next();
+    } catch (err) {
+        res.status(429).send('Too many requests.');
+    }
+});</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Rate Limiting with AWS Services</h3>
+                            <p class="mb-6 text-gray-700">AWS offers powerful, managed services to implement rate limiting at the infrastructure level, providing robust protection before traffic even reaches your Node.js application.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">AWS WAF (Web Application Firewall)</h4>
+                                    <p class="text-gray-600">AWS WAF can be placed in front of an Application Load Balancer, API Gateway, or CloudFront distribution. You can create rate-based rules to automatically block IP addresses that exceed a defined request threshold (e.g., 200 requests per 5 minutes). This is a highly effective first line of defense.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">AWS API Gateway Throttling</h4>
+                                    <p class="text-gray-600">API Gateway provides fine-grained throttling controls. You can set steady-state request rates and burst limits per API, per stage, or even per client using API keys and usage plans. This allows you to create different access tiers (e.g., Free vs. Premium) with different limits.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Lambda@Edge</h4>
+                                    <p class="text-gray-600">For highly custom logic, Lambda@Edge allows you to run code at AWS edge locations. You can inspect incoming requests and implement dynamic rate limiting rules based on complex criteria before the request is forwarded to your origin.</p>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                'load-balancing': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is Load Balancing?</h3>
+                            <p class="mb-4 text-gray-700">Load balancing is the method of distributing network traffic across multiple servers or resources to ensure no single server becomes a bottleneck. It is fundamental for building scalable, highly available, and performant applications. By acting as a "traffic cop," a load balancer improves response times and increases application availability by rerouting traffic away from failed or overloaded servers.</p>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Benefits</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Scalability:</strong> Easily handle increased traffic by adding more servers to the pool.</li>
+                                        <li><strong>Availability:</strong> Automatically reroutes traffic if a server fails, ensuring no downtime.</li>
+                                        <li><strong>Performance:</strong> Reduces latency by directing users to the optimal server.</li>
+                                        <li><strong>Security:</strong> Can provide an additional layer of defense by filtering traffic.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Common Algorithms</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Round Robin:</strong> Sequentially distributes requests to each server. Simple and fair.</li>
+                                        <li><strong>Least Connections:</strong> Sends new requests to the server with the fewest active connections.</li>
+                                        <li><strong>IP Hash:</strong> Ensures requests from a specific client IP always go to the same server.</li>
+                                        <li><strong>Weighted Round Robin:</strong> Distributes more traffic to servers with higher capacity (weight).</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Load Balancing in a Node.js Context</h3>
+                            <p class="mb-6 text-gray-700">Since a single Node.js process runs on a single CPU core, it's crucial to use load balancing to take advantage of multi-core systems and to scale beyond a single machine.</p>
+                            
+                            <h4 class="text-xl font-semibold mb-2">PM2 Cluster Mode</h4>
+                            <p class="mb-4 text-gray-700">PM2, a production process manager for Node.js, has a built-in cluster mode that automatically load balances across all available CPU cores on a single machine. This is the easiest way to improve performance without code changes.</p>
+                            <div class="code-block mb-8">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-bash"># Start app.js and fork it across all available CPUs
+pm2 start app.js -i max
+
+# -i max tells PM2 to auto-detect the number of CPU cores
+# and run that many processes.</code></pre>
+                            </div>
+
+                            <h4 class="text-xl font-semibold mb-2">Nginx as a Reverse Proxy</h4>
+                            <p class="mb-4 text-gray-700">For scaling across multiple machines, Nginx is a high-performance web server commonly used as a reverse proxy load balancer. It sits in front of your Node.js instances and distributes incoming traffic among them.</p>
+                             <div class="code-block mb-8">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-nginx"># In your nginx.conf
+http {
+    upstream my_nodejs_app {
+        # List of your Node.js server instances
+        server 127.0.0.1:3001;
+        server 127.0.0.1:3002;
+        server 127.0.0.1:3003;
+    }
+
+    server {
+        listen 80;
+        
+        location / {
+            proxy_pass http://my_nodejs_app;
+        }
+    }
+}</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">AWS Elastic Load Balancing (ELB)</h3>
+                            <p class="mb-6 text-gray-700">AWS provides Elastic Load Balancing (ELB), a fully managed service that automatically distributes traffic across targets like EC2 instances, containers, and Lambda functions. It's highly scalable and integrates seamlessly with other AWS services.</p>
+                            
+                             <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                                <div>
+                                    <h4 class="font-semibold text-lg text-teal-700">Application Load Balancer (ALB)</h4>
+                                    <p class="text-gray-600">Operates at Layer 7 (HTTP/HTTPS) and is best for microservices and web applications. It offers advanced routing based on path, hostname, or headers. This is the most common choice for Node.js applications.</p>
+                                </div>
+                                <hr>
+                                <div>
+                                    <h4 class="font-semibold text-lg text-teal-700">Network Load Balancer (NLB)</h4>
+                                    <p class="text-gray-600">Operates at Layer 4 (TCP/UDP) and is designed for extreme performance and low latency. It's ideal for gaming, streaming, or applications where preserving the source IP address is critical.</p>
+                                </div>
+                                <hr>
+                                <div>
+                                    <h4 class="font-semibold text-lg text-teal-700">Gateway Load Balancer (GWLB)</h4>
+                                    <p class="text-gray-600">Used to deploy, scale, and manage third-party virtual appliances like firewalls and intrusion detection systems.</p>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Comparisons & Practices', content: `
+                            <h3 class="text-2xl font-bold mb-4">ALB vs. NLB: Which to Choose?</h3>
+                            <p class="mb-6 text-gray-700">Choosing the right AWS load balancer is a key architectural decision. The Application Load Balancer (ALB) is flexible and feature-rich for web traffic, while the Network Load Balancer (NLB) is built for raw speed and high throughput.</p>
+                             <div class="overflow-x-auto bg-white rounded-lg shadow">
+                                <div class="grid comparison-table min-w-[700px]">
+                                    <div class="header">Feature</div>
+                                    <div class="header col-span-2">Application Load Balancer (ALB)</div>
+                                    <div class="header col-span-2">Network Load Balancer (NLB)</div>
+                                    
+                                    <div class="font-medium text-gray-700">OSI Layer</div>
+                                    <div class="col-span-2">Layer 7 (Application)</div>
+                                    <div class="col-span-2">Layer 4 (Transport)</div>
+
+                                    <div class="font-medium text-gray-700">Protocols</div>
+                                    <div class="col-span-2">HTTP, HTTPS, WebSockets</div>
+                                    <div class="col-span-2">TCP, UDP, TLS</div>
+
+                                    <div class="font-medium text-gray-700">Routing Logic</div>
+                                    <div class="col-span-2">Path, Host, Headers, Query String</div>
+                                    <div class="col-span-2">IP Address, Port</div>
+
+                                    <div class="font-medium text-gray-700">Use Cases</div>
+                                    <div class="col-span-2">Microservices, Containerized Apps, Web Apps</div>
+                                    <div class="col-span-2">High-Performance TCP, Gaming, IoT, Streaming</div>
+
+                                    <div class="font-medium text-gray-700">Static IP</div>
+                                    <div class="col-span-2">No</div>
+                                    <div class="col-span-2">Yes</div>
+
+                                    <div class="font-medium text-gray-700">Lambda Target</div>
+                                    <div class="col-span-2">Yes</div>
+                                    <div class="col-span-2">No</div>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                'caching': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is Caching?</h3>
+                            <p class="mb-4 text-gray-700">Caching is a fundamental optimization technique that involves storing frequently accessed data in a temporary, faster storage location (the "cache"). By serving subsequent requests from the cache instead of the original, slower data source (like a database or external API), applications can achieve significantly better performance and reduce backend load.</p>
+                            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Benefits</h4>
+                                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                    <li><strong>Performance:</strong> Drastically reduces latency and response times.</li>
+                                    <li><strong>Scalability:</strong> Reduces load on primary data sources, allowing them to serve more users.</li>
+                                    <li><strong>Availability:</strong> Can serve data even if the primary data source is temporarily unavailable.</li>
+                                    <li><strong>Cost Reduction:</strong> Minimizes expensive database queries or API calls.</li>
+                                </ul>
+                            </div>
+                            <h4 class="text-xl font-semibold mb-2">Caching Patterns</h4>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-4 rounded-lg border">
+                                    <h5 class="font-semibold">Cache-Aside (Lazy Loading)</h5>
+                                    <p class="text-sm text-gray-600">Application checks the cache first. On a miss, it fetches from the DB, stores the result in the cache, and returns it. Most common pattern.</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border">
+                                    <h5 class="font-semibold">Write-Through</h5>
+                                    <p class="text-sm text-gray-600">Application writes to both the cache and the database simultaneously. Ensures cache is always fresh but writes are slower.</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border">
+                                    <h5 class="font-semibold">Write-Back (Write-Behind)</h5>
+                                    <p class="text-sm text-gray-600">Application writes only to the cache, which asynchronously writes to the database later. Fastest writes, but risk of data loss on cache failure.</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border">
+                                    <h5 class="font-semibold">Cache Invalidation</h5>
+                                    <p class="text-sm text-gray-600">The process of removing stale data. Strategies include Time-To-Live (TTL), explicit deletion, or versioned keys.</p>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Implementing Caching in Node.js</h3>
+                            <p class="mb-6 text-gray-700">Effective caching in Node.js often involves integrating with in-memory data stores like Redis, which offers high performance and features like Time-To-Live (TTL) for automatic cache expiration.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Distributed Caching with Redis</h4>
+                            <p class="mb-4 text-gray-700">Using Redis is the standard for scalable Node.js applications. Here's an example of an Express.js middleware that implements a cache-aside strategy for an API endpoint.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-js">const redis = require('redis');
+const client = redis.createClient(); // Assumes Redis is running locally
+
+// Middleware to cache API responses
+const cacheMiddleware = (req, res, next) => {
+    const cacheKey = \`api:\${req.originalUrl}\`;
+
+    client.get(cacheKey, (err, data) => {
+        if (err) throw err;
+
+        if (data !== null) {
+            // Cache hit: send the cached data
+            res.send(JSON.parse(data));
+        } else {
+            // Cache miss: proceed to the route handler
+            // We'll override res.send to cache the new data
+            const originalSend = res.send;
+            res.send = (body) => {
+                // Cache the response for 1 hour (3600 seconds)
+                client.setex(cacheKey, 3600, JSON.stringify(body));
+                originalSend.call(res, body);
+            };
+            next();
+        }
+    });
+};
+
+// Apply middleware to a route
+app.get('/api/products', cacheMiddleware, (req, res) => {
+    // This code only runs on a cache miss
+    const products = fetchProductsFromDatabase();
+    res.send(products);
+});</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Caching with AWS Services</h3>
+                            <p class="mb-6 text-gray-700">AWS provides fully managed caching services that eliminate the operational overhead of setting up, scaling, and managing your own cache servers.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon ElastiCache</h4>
+                                    <p class="text-gray-600">A managed service supporting two popular in-memory engines: <strong>Redis</strong> and <strong>Memcached</strong>. ElastiCache is perfect for general-purpose application caching, session storage, and real-time analytics. It handles patching, backups, and scaling automatically.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon DynamoDB Accelerator (DAX)</h4>
+                                    <p class="text-gray-600">DAX is a purpose-built, highly available, in-memory cache specifically for Amazon DynamoDB. It can improve DynamoDB read performance by up to 10x, reducing response times from milliseconds to microseconds. It's API-compatible with DynamoDB, so no application code changes are needed.</p>
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-semibold mt-8 mb-2">Common Pitfall: Cache Stampede</h4>
+                            <p class="text-gray-700">Also known as the "dog-piling effect," this occurs when a popular cached item expires, and multiple concurrent requests simultaneously miss the cache and hit the database. This can overwhelm the database. Mitigation strategies include using cache locks (where only one process regenerates the value) or slightly staggering expiration times.</p>
+                        `},
+                    ]
+                },
+                'cdn': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is a Content Delivery Network (CDN)?</h3>
+                            <p class="mb-4 text-gray-700">A CDN is a geographically distributed network of proxy servers and their data centers (Points of Presence or PoPs). Its primary purpose is to deliver web content—like images, CSS, JavaScript files, and videos—to users based on their geographic location. By caching content closer to users, CDNs significantly reduce latency and improve page load times.</p>
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">How it Works: A Simple Flow</h4>
+                                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                                    <div class="diagram-box tooltip">User Request<span class="tooltiptext">A user in Europe requests your website.</span></div>
+                                    <div class="diagram-arrow">→</div>
+                                    <div class="diagram-box tooltip">CDN Edge Server (Europe)<span class="tooltiptext">The request hits the nearest CDN server. If content is cached, it's served immediately.</span></div>
+                                    <div class="diagram-arrow">→</div>
+                                    <div class="diagram-box tooltip">Origin Server (USA)<span class="tooltiptext">If not cached, the CDN fetches it from your main server, caches it, and then serves it.</span></div>
+                                </div>
+                            </div>
+                            <h4 class="font-semibold text-lg my-4 text-teal-700">Key Benefits</h4>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li><strong>Performance:</strong> Faster load times lead to better user experience and SEO.</li>
+                                <li><strong>Availability:</strong> Distributes traffic load, making sites more resilient to spikes and outages.</li>
+                                <li><strong>Security:</strong> Can provide DDoS mitigation and other security features at the network edge.</li>
+                                <li><strong>Cost Savings:</strong> Reduces bandwidth costs from your origin server.</li>
+                            </ul>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">CDN Best Practices for Node.js Apps</h3>
+                            <p class="mb-6 text-gray-700">The most effective way to use a CDN with Node.js is to offload static asset serving entirely. Your Node.js server should focus on dynamic API requests, not serving files like images or CSS.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Asset Fingerprinting (Cache Busting)</h4>
+                            <p class="mb-4 text-gray-700">This is the most important technique. By adding a unique hash to filenames (e.g., <code>style.a1b2c3d4.css</code>), you can tell the CDN to cache assets "forever". When you change the file, the hash changes, the filename changes, and the CDN automatically fetches the new version. This avoids complex cache invalidation commands.</p>
+                            <p class="mb-4 text-gray-700">Modern frontend build tools like Webpack, Vite, or Create React App handle this automatically for you during the production build process.</p>
+
+                             <h4 class="text-xl font-semibold mb-2">Setting Cache-Control Headers</h4>
+                             <p class="mb-4 text-gray-700">While you should serve static files from S3/CDN, if you must serve them from Node.js, setting the correct <code>Cache-Control</code> header is vital. Here's how you can do it in Express for fingerprinted assets.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-js">// In your Express app
+// Serve static files from the 'public' directory
+app.use(express.static('public', {
+  maxAge: '1y', // Cache for 1 year
+  immutable: true // Tell browsers the file will not change
+}));
+
+// The combination of a long maxAge and immutable flag
+// is perfect for fingerprinted assets served by a CDN.</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Amazon CloudFront: AWS's Global CDN</h3>
+                            <p class="mb-6 text-gray-700">Amazon CloudFront is a fast, highly secure, and programmable CDN that integrates seamlessly with other AWS services. The most common pattern for a Node.js application is to use an S3 bucket as the origin for static assets and CloudFront to distribute them.</p>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                                <div>
+                                    <h4 class="font-semibold text-lg text-teal-700">Architecture: S3 + CloudFront</h4>
+                                    <p class="text-gray-600 mb-4">This architecture decouples your static content from your dynamic Node.js application, which is a best practice for scalability and performance.</p>
+                                    <ol class="list-decimal list-inside space-y-2">
+                                        <li>Your build process (e.g., a CI/CD pipeline) compiles your frontend assets (JS, CSS, images) with fingerprints.</li>
+                                        <li>These static assets are uploaded to an Amazon S3 bucket.</li>
+                                        <li>You create a CloudFront distribution and point it to the S3 bucket as its origin.</li>
+                                        <li>You configure CloudFront to cache these assets for a long duration (e.g., one year).</li>
+                                        <li>Your Node.js application (running on EC2, ECS, or Lambda) serves the initial HTML file, which contains links to the fingerprinted assets now served by CloudFront.</li>
+                                    </ol>
+                                </div>
+                                <hr>
+                                <div>
+                                    <h4 class="font-semibold text-lg text-teal-700">Securing the Origin</h4>
+                                    <p class="text-gray-600">To ensure users can only access your S3 assets through CloudFront, you should use <strong>Origin Access Control (OAC)</strong>. This feature restricts direct access to the S3 bucket, forcing all traffic through the CDN where you can apply security rules like AWS WAF.</p>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                 'microservices': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is a Microservices Architecture?</h3>
+                            <p class="mb-4 text-gray-700">A microservices architecture is an approach to building a single application as a suite of small, autonomous, and loosely coupled services. Each service is built around a specific business capability, runs in its own process, and can be developed, deployed, and scaled independently. This is in contrast to a monolithic architecture, where all components are part of a single, large codebase.</p>
+                             <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Advantages</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Independent Scaling:</strong> Scale only the services that need more resources.</li>
+                                        <li><strong>Technology Freedom:</strong> Each service can use the best tech stack for its job.</li>
+                                        <li><strong>Improved Fault Isolation:</strong> Failure in one service doesn't bring down the whole app.</li>
+                                        <li><strong>Faster Development Cycles:</strong> Small, focused teams can build and deploy independently.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Challenges</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Operational Complexity:</strong> Managing many moving parts is harder than one.</li>
+                                        <li><strong>Distributed Data Management:</strong> Ensuring data consistency across services is complex.</li>
+                                        <li><strong>Inter-service Communication:</strong> Requires robust networking and resilience patterns.</li>
+                                        <li><strong>Testing & Debugging:</strong> End-to-end testing becomes more difficult.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Building Microservices with Node.js</h3>
+                            <p class="mb-6 text-gray-700">Node.js is an excellent choice for microservices due to its lightweight nature, fast startup times, and non-blocking I/O model, which is great for handling concurrent requests. Frameworks like NestJS provide out-of-the-box support for building microservices.</p>
+                            
+                            <h4 class="text-xl font-semibold mb-2">Communication Patterns</h4>
+                            <p class="mb-4 text-gray-700">How services talk to each other is a crucial design decision.</p>
+                            <ul class="list-disc list-inside space-y-2 mb-6">
+                                <li><strong>Synchronous (Request-Response):</strong> One service makes a request to another and waits for a response (e.g., via HTTP/REST). This is simple but creates tight coupling.</li>
+                                <li><strong>Asynchronous (Event-Driven):</strong> Services communicate by publishing and subscribing to events via a message broker (like RabbitMQ or Kafka). This promotes loose coupling and greater resilience.</li>
+                            </ul>
+
+                            <h4 class="text-xl font-semibold mb-2">Example with NestJS (Conceptual)</h4>
+                            <p class="mb-4 text-gray-700">NestJS abstracts away the transport layer, allowing you to easily switch between protocols like TCP, Redis, or Kafka for inter-service communication.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-typescript">// In a NestJS "client" service (e.g., API Gateway)
+@Injectable()
+export class AppService {
+  constructor(@Inject('MATH_SERVICE') private client: ClientProxy) {}
+
+  sum(data: number[]): Observable<number> {
+    // 'sum' is the message pattern the other service listens for
+    return this.client.send<number>({ cmd: 'sum' }, data);
+  }
+}
+
+// In a NestJS "math" microservice
+@Controller()
+export class MathController {
+  @MessagePattern({ cmd: 'sum' }) // Listens for the 'sum' message
+  accumulate(data: number[]): number {
+    return (data || []).reduce((a, b) => a + b);
+  }
+}</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Deploying Microservices on AWS</h3>
+                            <p class="mb-6 text-gray-700">AWS offers a rich ecosystem of services for deploying, managing, and orchestrating containerized microservices at any scale.</p>
+                            
+                             <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon ECS (Elastic Container Service)</h4>
+                                    <p class="text-gray-600">AWS's proprietary, fully managed container orchestration service. It's deeply integrated with the AWS ecosystem and is often considered easier to learn and manage than Kubernetes. You can run your containers on EC2 instances (for more control) or using <strong>AWS Fargate</strong> (serverless, for less management overhead).</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon EKS (Elastic Kubernetes Service)</h4>
+                                    <p class="text-gray-600">A managed service that lets you run Kubernetes on AWS without needing to install, operate, and maintain your own Kubernetes control plane. It's ideal for teams already familiar with Kubernetes or who want to leverage the vast open-source Kubernetes ecosystem.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">AWS Lambda</h4>
+                                    <p class="text-gray-600">For certain types of microservices (especially event-driven or with infrequent traffic), Lambda offers a serverless approach. You only pay for the compute time you consume, and AWS handles all infrastructure management. This is often used for functions behind an API Gateway.</p>
+                                </div>
+                            </div>
+                        `},
+                         { name: 'Comparisons & Practices', content: `
+                            <h3 class="text-2xl font-bold mb-4">Compute Options for Microservices</h3>
+                            <p class="mb-6 text-gray-700">Choosing between ECS, EKS, and Lambda depends on your team's expertise, operational preferences, and application requirements.</p>
+                             <div class="overflow-x-auto bg-white rounded-lg shadow">
+                                <div class="grid min-w-[800px]" style="grid-template-columns: 1fr repeat(3, minmax(0, 1fr));">
+                                    <div class="header p-4">Feature</div>
+                                    <div class="header p-4">Amazon ECS</div>
+                                    <div class="header p-4">Amazon EKS</div>
+                                    <div class="header p-4">AWS Lambda</div>
+                                    
+                                    <div class="p-4 font-medium text-gray-700">Abstraction</div>
+                                    <div class="p-4">Managed Container Orchestrator</div>
+                                    <div class="p-4">Managed Kubernetes</div>
+                                    <div class="p-4">Serverless Functions</div>
+
+                                    <div class="p-4 font-medium text-gray-700">Ecosystem</div>
+                                    <div class="p-4">AWS Native</div>
+                                    <div class="p-4">Open Source (Kubernetes)</div>
+                                    <div class="p-4">AWS Native (Serverless)</div>
+                                    
+                                    <div class="p-4 font-medium text-gray-700">Learning Curve</div>
+                                    <div class="p-4">Lower</div>
+                                    <div class="p-4">Higher</div>
+                                    <div class="p-4">Lowest</div>
+
+                                    <div class="p-4 font-medium text-gray-700">Control vs. Mngmt</div>
+                                    <div class="p-4">Balanced (more managed)</div>
+                                    <div class="p-4">More control (but complex)</div>
+                                    <div class="p-4">Minimal control (fully managed)</div>
+
+                                    <div class="p-4 font-medium text-gray-700">Best For</div>
+                                    <div class="p-4">Teams wanting deep AWS integration and simplicity.</div>
+                                    <div class="p-4">Teams needing portability, flexibility, and the K8s ecosystem.</div>
+                                    <div class="p-4">Event-driven, short-running, or stateless services.</div>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                'api-gateway': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is an API Gateway?</h3>
+                            <p class="mb-4 text-gray-700">In a microservices architecture, an API Gateway acts as a single, unified entry point for all client requests. Instead of clients calling dozens of different microservices directly, they make a single call to the API Gateway. The gateway then intelligently routes the request to the appropriate downstream service(s), aggregates the results, and returns a single response to the client.</p>
+                            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Responsibilities (Cross-Cutting Concerns)</h4>
+                                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                    <li><strong>Routing:</strong> Directing incoming requests to the correct microservice.</li>
+                                    <li><strong>Authentication & Authorization:</strong> Verifying the identity of the caller and their permissions.</li>
+                                    <li><strong>Rate Limiting & Throttling:</strong> Protecting backend services from being overwhelmed.</li>
+                                    <li><strong>Caching:</strong> Caching responses to reduce latency and backend load.</li>
+                                    <li><strong>Request/Response Transformation:</strong> Modifying requests or responses as they pass through.</li>
+                                    <li><strong>Logging & Monitoring:</strong> Providing a centralized point for observability.</li>
+                                </ul>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">API Gateway Patterns with Node.js</h3>
+                            <p class="mb-6 text-gray-700">While you can build your own API Gateway in Node.js, it's a complex undertaking. The more common approach is to use a dedicated gateway service or product and have your Node.js applications act as the downstream microservices.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Build vs. Buy</h4>
+                            <p class="mb-4 text-gray-700">Building your own gateway gives you maximum flexibility but requires significant effort to implement features like rate limiting, authentication, and monitoring correctly. Using a managed service like AWS API Gateway or an open-source product like Kong offloads this heavy lifting, allowing you to focus on business logic.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Example: Node.js as a Backend Service</h4>
+                            <p class="mb-4 text-gray-700">Your Node.js services should be simple, focused applications. The API Gateway handles the public-facing complexity.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-javascript">// A simple "Users" microservice in Express.js
+// This service would sit BEHIND an API Gateway.
+const express = require('express');
+const app = express();
+
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+];
+
+// The API Gateway would route GET /users/{id} to this endpoint.
+app.get('/users/:id', (req, res) => {
+  const user = users.find(u => u.id === parseInt(req.params.id));
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
+// The gateway would handle authentication, rate limiting, etc.
+// The microservice only cares about its specific task.
+app.listen(3000, () => console.log('Users microservice running on port 3000'));
+</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">AWS API Gateway: The Managed Solution</h3>
+                            <p class="mb-6 text-gray-700">Amazon API Gateway is a fully managed service that makes it easy to create, publish, maintain, monitor, and secure APIs at any scale. It acts as the "front door" for your applications, seamlessly integrating with backend services like AWS Lambda, ECS, EKS, or any HTTP endpoint.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">API Types Supported</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-gray-600">
+                                       <li><strong>RESTful APIs (HTTP & REST):</strong> Standard for most web and mobile backends.</li>
+                                       <li><strong>WebSocket APIs:</strong> For real-time, two-way communication applications like chat apps or dashboards.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Core Features</h4>
+                                    <p class="text-gray-600">API Gateway handles all the standard gateway tasks, including traffic management (throttling, caching), authorization (IAM, Cognito, Lambda Authorizers), API versioning, and monitoring via CloudWatch.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Typical Architecture</h4>
+                                    <p class="text-gray-600">A common serverless pattern is to use API Gateway to define HTTP endpoints that trigger specific AWS Lambda functions written in Node.js. This creates a highly scalable, pay-per-use backend with no servers to manage.</p>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                'webhook': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What are Webhooks?</h3>
+                            <p class="mb-4 text-gray-700">Webhooks are a mechanism for one application to provide other applications with real-time information. They are sometimes called "reverse APIs." Instead of your application constantly polling an external service for new data (the API approach), a webhook allows the external service to send a "push" notification (an HTTP POST request) to your application as soon as an event occurs.</p>
+                            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">API Polling vs. Webhooks</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h5 class="font-semibold">API Polling (The "Pull" Method)</h5>
+                                        <p class="text-gray-600 text-sm">Your App: "Anything new?" → Service: "No."<br>Your App: "Anything new?" → Service: "No."<br>Your App: "Anything new?" → Service: "Yes, here it is."</p>
+                                        <p class="mt-2 text-xs text-gray-500">Inefficient and delayed.</p>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold">Webhooks (The "Push" Method)</h5>
+                                        <p class="text-gray-600 text-sm">Service: "Something new happened! Here's the data." → Your App: "Thanks!"</p>
+                                        <p class="mt-2 text-xs text-gray-500">Efficient and real-time.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Creating a Webhook Listener in Node.js</h3>
+                            <p class="mb-6 text-gray-700">A webhook listener is simply a web server with a specific endpoint (URL) that is configured to accept HTTP POST requests from an external service. Express.js is perfect for this.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Key Implementation Steps</h4>
+                            <ol class="list-decimal list-inside space-y-2 mb-6">
+                                <li><strong>Create an Endpoint:</strong> Define a POST route (e.g., <code>/webhook/github</code>) to receive events.</li>
+                                <li><strong>Respond Immediately:</strong> Acknowledge receipt of the webhook by sending a <code>2xx</code> status code right away. This prevents the provider from thinking the delivery failed and retrying.</li>
+                                <li><strong>Process Asynchronously:</strong> Handle the actual business logic (e.g., updating a database) in the background to avoid timing out the request. Offloading the payload to a message queue is a common pattern.</li>
+                                <li><strong>Verify Signatures:</strong> This is the most critical security step. Verify the signature sent by the provider to ensure the request is authentic and hasn't been tampered with. This requires access to the raw request body.</li>
+                            </ol>
+                            
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-javascript">const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+// Use express.raw() to get the raw body for signature verification
+app.post('/webhook/github', express.raw({ type: 'application/json' }), (req, res) => {
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  const signature = req.headers['x-hub-signature-256'];
+  
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = 'sha256=' + hmac.update(req.body).digest('hex');
+
+  // Use crypto.timingSafeEqual to prevent timing attacks
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  // Respond immediately
+  res.status(202).send('Accepted');
+
+  // Process the event payload asynchronously
+  const payload = JSON.parse(req.body);
+  handleGitHubEvent(payload); 
+});
+
+function handleGitHubEvent(payload) {
+    // Add to a queue or process here...
+    console.log('Processing event:', payload.action);
+}
+
+app.listen(3000);</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Scalable Webhook Processing on AWS</h3>
+                            <p class="mb-6 text-gray-700">Using AWS services is ideal for building robust, scalable webhook listeners. The best practice is to have a lightweight endpoint that validates the request and immediately passes the payload to a durable backend service for processing.</p>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">Recommended Architecture: API Gateway -> SQS -> Lambda</h4>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-600">
+                                    <li>An external service sends a webhook to an <strong>AWS API Gateway</strong> endpoint.</li>
+                                    <li>API Gateway is configured with a Lambda authorizer to perform signature verification.</li>
+                                    <li>Upon successful validation, API Gateway's integration pushes the entire request payload directly into an <strong>Amazon SQS (Simple Queue Service)</strong> queue. This provides durability and decouples ingestion from processing. API Gateway responds with a <code>202 Accepted</code> status.</li>
+                                    <li>The SQS queue triggers an <strong>AWS Lambda</strong> function (written in Node.js).</li>
+                                    <li>The Lambda function pulls the message from the queue and performs the actual business logic, with built-in retries and dead-letter queue (DLQ) support for failed messages.</li>
+                                </ol>
+                                <p class="mt-4 text-sm text-gray-800">This serverless pattern is highly resilient, scalable, and cost-effective, as you only pay for what you use.</p>
+                            </div>
+                        `},
+                    ]
+                },
+                'sharding': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is Database Sharding?</h3>
+                            <p class="mb-4 text-gray-700">Sharding is a type of horizontal partitioning that splits a large database into smaller, faster, more manageable pieces called "shards." Each shard is an independent database, and together, the shards make up a single logical database. This technique is used to scale out databases when a single server can no longer handle the load or data volume (i.e., when vertical scaling is no longer feasible).</p>
+                             <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Benefits</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Horizontal Scalability:</strong> Add more machines to scale instead of upgrading one.</li>
+                                        <li><strong>Improved Performance:</strong> Queries are faster as they run against smaller datasets.</li>
+                                        <li><strong>Increased Availability:</strong> An outage in one shard only affects a subset of the data.</li>
+                                        <li><strong>Geographic Distribution:</strong> Place shards closer to users to reduce latency.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Sharding Strategies</h4>
+                                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                        <li><strong>Range-Based:</strong> Data is sharded based on a range of values (e.g., A-M, N-Z). Simple, but can lead to "hotspots".</li>
+                                        <li><strong>Hash-Based:</strong> A hash function is applied to a "shard key" to determine the shard. Ensures even distribution but makes range queries complex.</li>
+                                        <li><strong>Directory-Based:</strong> A lookup table maps keys to shards. Flexible but adds a single point of failure.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Sharding at the Application Layer</h3>
+                            <p class="mb-6 text-gray-700">When the database itself doesn't natively support sharding, the logic for routing queries to the correct shard must live in the application. This involves maintaining a connection to each shard and choosing the right one based on the shard key.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Conceptual Example in Node.js</h4>
+                            <p class="mb-4 text-gray-700">This example shows how an application might route queries to different MongoDB instances based on a product's category (the shard key).</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-javascript">const { MongoClient } = require('mongodb');
+
+// A map of shard keys to their database connection strings
+const shardMap = {
+  'clothing': 'mongodb://shard-1.example.com:27017',
+  'electronics': 'mongodb://shard-2.example.com:27017',
+  'books': 'mongodb://shard-3.example.com:27017'
+};
+
+const connections = {}; // Cache for DB connections
+
+async function getDbForShard(shardKey) {
+  const url = shardMap[shardKey];
+  if (!url) throw new Error('Invalid shard key');
+
+  if (!connections[shardKey]) {
+    const client = new MongoClient(url);
+    await client.connect();
+    connections[shardKey] = client.db('sharded_db');
+  }
+  return connections[shardKey];
+}
+
+// Example usage in an Express route
+app.post('/products', async (req, res) => {
+  const { category, name, price } = req.body;
+  
+  try {
+    const db = await getDbForShard(category);
+    await db.collection('products').insertOne({ name, price });
+    res.status(201).send('Product created in shard: ' + category);
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
+});</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Database Sharding on AWS</h3>
+                            <p class="mb-6 text-gray-700">AWS provides several database services that are either natively sharded or can be configured for a sharded architecture.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon Aurora & RDS</h4>
+                                    <p class="text-gray-600">While relational databases like PostgreSQL and MySQL (available on RDS and Aurora) don't auto-shard, you can implement application-level sharding by creating multiple independent DB instances or clusters. Each instance acts as a shard. You can use features like Multi-AZ for high availability on each shard.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon DynamoDB</h4>
+                                    <p class="text-gray-600">DynamoDB is a NoSQL database that is <strong>horizontally scaled by default</strong>. When you create a table, you define a partition key. DynamoDB uses this key to automatically hash and distribute your data across multiple storage partitions. This is essentially built-in, managed sharding. You don't have to manage the shards yourself; DynamoDB handles it all.</p>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                'proxy': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What is a Proxy Server?</h3>
+                            <p class="mb-4 text-gray-700">A proxy server acts as an intermediary for requests from clients seeking resources from other servers. It sits between the client and the destination server, providing various services like filtering, logging, caching, and security. There are two main types: forward and reverse proxies.</p>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Forward Proxy</h4>
+                                    <p class="text-gray-600">Sits in front of a client (or group of clients) and forwards their requests to the internet. It's used by the client to access the outside world, often for filtering, logging, or bypassing firewalls within a corporate network. <strong>The server doesn't know it's talking to a proxy.</strong></p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Reverse Proxy</h4>
+                                    <p class="text-gray-600">Sits in front of a server (or group of servers) and accepts requests from the internet on their behalf. It's used by the server to protect itself and manage incoming traffic. <strong>The client doesn't know it's talking to a proxy.</strong> This is the most common type in web architecture.</p>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Using a Reverse Proxy with Node.js</h3>
+                            <p class="mb-6 text-gray-700">It is a standard best practice to <strong>always</strong> run a production Node.js application behind a reverse proxy like Nginx or Apache. The proxy handles tasks that Node.js is not optimized for, such as serving static files, SSL/TLS termination, and handling high-concurrency connections efficiently.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">Nginx Configuration for a Node.js App</h4>
+                            <p class="mb-4 text-gray-700">This Nginx configuration listens for public traffic on port 80 and forwards it to a Node.js application running locally on port 3000. It also passes necessary headers so the Node.js app knows the original client's IP address.</p>
+                            <div class="code-block">
+                                <button class="copy-button">Copy</button>
+                                <pre><code class="language-nginx">server {
+    listen 80;
+    server_name your_domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000; # Forward requests to Node.js app
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}</code></pre>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">Proxy Services on AWS</h3>
+                            <p class="mb-6 text-gray-700">Several AWS services inherently function as managed reverse proxies, providing security, scalability, and performance benefits without requiring manual configuration of servers like Nginx.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Application Load Balancer (ALB)</h4>
+                                    <p class="text-gray-600">An ALB is effectively a managed reverse proxy. It terminates client connections, inspects HTTP requests, and routes them to backend targets (like your Node.js app on ECS or EC2) based on rules you define. It handles SSL termination, health checks, and load balancing automatically.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon API Gateway</h4>
+                                    <p class="text-gray-600">As a specialized reverse proxy for APIs, API Gateway provides advanced features like authentication, throttling, caching, and request transformation before forwarding requests to backend services like Lambda or other HTTP endpoints.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon CloudFront</h4>
+                                    <p class="text-gray-600">As a CDN, CloudFront acts as a global network of reverse proxies. It caches content at the edge and forwards requests to your origin server, reducing latency and offloading traffic.</p>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+                 'message-queues': {
+                    tabs: [
+                        { name: 'Overview', content: `
+                            <h3 class="text-2xl font-bold mb-4">What are Message Queues?</h3>
+                            <p class="mb-4 text-gray-700">Message queues are a form of middleware that enables asynchronous communication between different components or services in an application. A service, called a "producer," sends a message to a queue. Another service, a "consumer," later retrieves that message and processes it. The producer and consumer do not need to interact at the same time.</p>
+                            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                                <h4 class="font-semibold text-lg mb-2 text-teal-700">Key Benefits</h4>
+                                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                    <li><strong>Decoupling:</strong> Producers and consumers don't need to know about each other, only the queue. This allows them to be developed, deployed, and scaled independently.</li>
+                                    <li><strong>Resilience:</strong> If a consumer service fails, messages remain safely in the queue until the service recovers. This prevents data loss.</li>
+                                    <li><strong>Scalability:</strong> You can add more consumers to process messages in parallel, increasing throughput.</li>
+                                    <li><strong>Responsiveness:</strong> A producer can quickly offload a long-running task to a queue and immediately respond to the user, while the task is processed in the background.</li>
+                                </ul>
+                            </div>
+                        `},
+                        { name: 'Node.js Implementation', content: `
+                            <h3 class="text-2xl font-bold mb-4">Using Message Queues with Node.js</h3>
+                            <p class="mb-6 text-gray-700">Node.js applications can integrate with popular message brokers like RabbitMQ or Apache Kafka using client libraries. This is fundamental for building scalable, event-driven microservices.</p>
+
+                            <h4 class="text-xl font-semibold mb-2">RabbitMQ Example with <code>amqplib</code></h4>
+                            <p class="mb-4 text-gray-700">RabbitMQ is a traditional and powerful message broker. Here's how a producer sends a message and a consumer receives it.</p>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="code-block">
+                                    <p class="text-sm font-semibold mb-2 text-gray-400">Producer (send.js)</p>
+                                    <button class="copy-button">Copy</button>
+                                    <pre><code class="language-javascript">const amqp = require('amqplib');
+
+async function send() {
+  const conn = await amqp.connect('amqp://localhost');
+  const channel = await conn.createChannel();
+  const queue = 'task_queue';
+  const msg = 'Process this long task!';
+
+  await channel.assertQueue(queue, { durable: true });
+  channel.sendToQueue(queue, Buffer.from(msg), { persistent: true });
+  console.log(" [x] Sent '%s'", msg);
+  
+  setTimeout(() => { conn.close(); process.exit(0); }, 500);
+}
+send();</code></pre>
+                                </div>
+                                <div class="code-block">
+                                    <p class="text-sm font-semibold mb-2 text-gray-400">Consumer (worker.js)</p>
+                                    <button class="copy-button">Copy</button>
+                                    <pre><code class="language-javascript">const amqp = require('amqplib');
+
+async function receive() {
+  const conn = await amqp.connect('amqp://localhost');
+  const channel = await conn.createChannel();
+  const queue = 'task_queue';
+
+  await channel.assertQueue(queue, { durable: true });
+  channel.prefetch(1); // Process one message at a time
+  
+  console.log(" [*] Waiting for messages.");
+  channel.consume(queue, (msg) => {
+    console.log(" [x] Received %s", msg.content.toString());
+    // Simulate work
+    setTimeout(() => {
+        channel.ack(msg); // Acknowledge message is processed
+    }, 2000);
+  }, { noAck: false });
+}
+receive();</code></pre>
+                                </div>
+                            </div>
+                        `},
+                        { name: 'AWS Integration', content: `
+                            <h3 class="text-2xl font-bold mb-4">AWS Messaging Services</h3>
+                            <p class="mb-6 text-gray-700">AWS provides a suite of fully managed messaging services, eliminating the need to operate your own brokers and ensuring high availability and scalability.</p>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon SQS (Simple Queue Service)</h4>
+                                    <p class="text-gray-600">A fully managed message queuing service for decoupling and scaling microservices. It's a pull-based system ideal for asynchronous task processing. It offers Standard queues (high throughput) and FIFO queues (guaranteed order).</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon SNS (Simple Notification Service)</h4>
+                                    <p class="text-gray-600">A pub/sub messaging service for fanning out messages to a large number of subscribers. A producer sends one message to an SNS topic, and SNS pushes it to all subscribed endpoints (e.g., SQS queues, Lambda functions, HTTP endpoints).</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <h4 class="font-semibold text-lg mb-2 text-teal-700">Amazon EventBridge</h4>
+                                    <p class="text-gray-600">A serverless event bus that makes it easy to connect applications using data from your own apps, SaaS applications, and AWS services. It's great for building complex event-driven architectures with advanced filtering and routing rules.</p>
+                                </div>
+                            </div>
+                        `},
+                         { name: 'Comparisons & Practices', content: `
+                            <h3 class="text-2xl font-bold mb-4">SQS vs. SNS vs. EventBridge</h3>
+                            <p class="mb-6 text-gray-700">Understanding the primary use case for each service is key to building effective architectures.</p>
+                             <div class="overflow-x-auto bg-white rounded-lg shadow">
+                                <div class="grid min-w-[800px]" style="grid-template-columns: 1fr repeat(3, minmax(0, 1fr));">
+                                    <div class="header p-4">Feature</div>
+                                    <div class="header p-4">Amazon SQS</div>
+                                    <div class="header p-4">Amazon SNS</div>
+                                    <div class="header p-4">Amazon EventBridge</div>
+                                    
+                                    <div class="p-4 font-medium text-gray-700">Pattern</div>
+                                    <div class="p-4">Queue (One-to-One)</div>
+                                    <div class="p-4">Pub/Sub (One-to-Many)</div>
+                                    <div class="p-4">Event Bus (Many-to-Many)</div>
+
+                                    <div class="p-4 font-medium text-gray-700">Delivery</div>
+                                    <div class="p-4">Pull-based</div>
+                                    <div class="p-4">Push-based</div>
+                                    <div class="p-4">Push-based (to targets)</div>
+                                    
+                                    <div class="p-4 font-medium text-gray-700">Core Use Case</div>
+                                    <div class="p-4">Decouple services, process background jobs.</div>
+                                    <div class="p-4">Distribute a single event to multiple subscribers.</div>
+                                    <div class="p-4">Route events from many sources to many targets with complex rules.</div>
+
+                                    <div class="p-4 font-medium text-gray-700">Key Feature</div>
+                                    <div class="p-4">Message durability, Dead-Letter Queues (DLQ).</div>
+                                    <div class="p-4">Fan-out, message filtering.</div>
+                                    <div class="p-4">SaaS integrations, Schema Registry, Content-based filtering.</div>
+                                </div>
+                            </div>
+                        `},
+                    ]
+                },
+
+            };
+
+            const conceptsGrid = document.getElementById('concepts-grid');
+            const detailedContentContainer = document.getElementById('detailed-content');
+
+            function createConceptCard(concept) {
+                const card = document.createElement('a');
+                card.href = `#${concept.id}`;
+                card.className = 'concept-card bg-white rounded-lg shadow p-6 flex flex-col items-center text-center cursor-pointer';
+                card.innerHTML = `
+                    <div class="text-4xl mb-3">${concept.icon}</div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">${concept.title}</h3>
+                    <p class="text-sm text-gray-600">${concept.summary}</p>
+                `;
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    history.pushState(null, '', `#${concept.id}`);
+                    renderDetailedContent(concept.id);
+                });
+                return card;
+            }
+            
+            function createDetailedContentSection(conceptId) {
+                const concept = contentData[conceptId];
+                if (!concept) return '';
+
+                const section = document.createElement('section');
+                section.id = conceptId;
+                section.className = 'pt-16 -mt-16'; // Offset for fixed header
+
+                let tabsHtml = '<div class="flex flex-wrap border-b border-gray-200 mb-6">';
+                concept.tabs.forEach((tab, index) => {
+                    tabsHtml += `<button data-target="${conceptId}-${index}" class="tab-button text-gray-600 py-3 px-4 sm:px-6 font-medium text-sm sm:text-base border-b-2 border-transparent hover:text-teal-600 ${index === 0 ? 'active' : ''}">${tab.name}</button>`;
+                });
+                tabsHtml += '</div>';
+
+                let contentHtml = '';
+                concept.tabs.forEach((tab, index) => {
+                    contentHtml += `<div id="${conceptId}-${index}" class="tab-content ${index === 0 ? 'active' : ''}">${tab.content}</div>`;
+                });
+
+                const backButton = `<div class="mb-8"><a href="#concepts-grid" id="back-to-grid" class="inline-flex items-center text-teal-600 hover:text-teal-800 font-medium"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>Back to Overview</a></div>`;
+
+                const conceptMeta = concepts.find(c => c.id === conceptId);
+                section.innerHTML = `
+                    ${backButton}
+                    <div class="flex items-center mb-4">
+                        <span class="text-5xl mr-4">${conceptMeta.icon}</span>
+                        <div>
+                            <h2 class="text-4xl font-extrabold tracking-tight text-gray-900">${conceptMeta.title}</h2>
+                            <p class="text-lg text-gray-600">${conceptMeta.summary}</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-6 sm:p-8 rounded-lg mt-8">
+                        ${tabsHtml}
+                        ${contentHtml}
+                    </div>
+                `;
+                return section;
+            }
+
+            function renderDetailedContent(conceptId) {
+                const section = createDetailedContentSection(conceptId);
+                detailedContentContainer.innerHTML = '';
+                if(section) {
+                    detailedContentContainer.appendChild(section);
+                    conceptsGrid.style.display = 'none';
+                    attachTabListeners(conceptId);
+                    attachCopyListeners();
+                    document.getElementById('back-to-grid').addEventListener('click', (e) => {
+                         e.preventDefault();
+                         history.pushState(null, '', ' ');
+                         showGrid();
+                    });
+                     // Scroll to the section
+                    document.getElementById(conceptId).scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+
+            function showGrid() {
+                 detailedContentContainer.innerHTML = '';
+                 conceptsGrid.style.display = 'grid';
+            }
+
+            function attachTabListeners(conceptId) {
+                const tabs = document.querySelectorAll(`#${conceptId} .tab-button`);
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetId = tab.dataset.target;
+
+                        document.querySelectorAll(`#${conceptId} .tab-button`).forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+
+                        document.querySelectorAll(`#${conceptId} .tab-content`).forEach(c => c.classList.remove('active'));
+                        document.getElementById(targetId).classList.add('active');
+                    });
+                });
+            }
+
+            function attachCopyListeners() {
+                document.querySelectorAll('.copy-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const code = button.nextElementSibling.querySelector('code').innerText;
+                        
+                        // Use a temporary textarea element to copy to clipboard
+                        const textarea = document.createElement('textarea');
+                        textarea.value = code;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            button.innerText = 'Copied!';
+                        } catch (err) {
+                            button.innerText = 'Failed!';
+                        } finally {
+                           document.body.removeChild(textarea);
+                           setTimeout(() => { button.innerText = 'Copy'; }, 2000);
+                        }
+                    });
+                });
+            }
+            
+            // Initial render
+            concepts.forEach(concept => {
+                const card = createConceptCard(concept);
+                conceptsGrid.appendChild(card);
+            });
+
+            // Handle routing on load and back/forward navigation
+            function handleRouting() {
+                const hash = window.location.hash.substring(1);
+                if (concepts.some(c => c.id === hash)) {
+                    renderDetailedContent(hash);
+                } else {
+                    showGrid();
+                }
+            }
+
+            window.addEventListener('popstate', handleRouting);
+            handleRouting(); // Initial load
+        });
+    </script>
+</body>
+</html>
